@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Video,
@@ -21,6 +21,8 @@ import {
   Flame,
   CheckCircle2,
   Lock,
+  Layers,
+  Sparkles,
 } from "lucide-react";
 import { Card, Chip, fadeUp, stagger } from "@/components/ui/primitives";
 import { JUNCTIONS } from "@/lib/data";
@@ -32,81 +34,177 @@ const FEEDS = [
   { id: "bajajnagar", name: "Bajaj Nagar", isMLFeed: false, camera: "CAM-12 (Institutional)" },
 ];
 
-const SIMULATED_BOXES = [
-  { x: 12, y: 40, w: 22, h: 30, label: "2W", c: "#ef8a00" },
-  { x: 40, y: 30, w: 26, h: 36, label: "car", c: "#3d5afe" },
-  { x: 68, y: 46, w: 20, h: 26, label: "3W", c: "#2940c4" },
-  { x: 30, y: 60, w: 16, h: 22, label: "ped", c: "#c62828" },
-  { x: 56, y: 64, w: 18, h: 24, label: "2W", c: "#ef8a00" },
+/** Physical Signal Coordinates mapped to 1280x720 video percentages */
+const PHYSICAL_SIGNALS = {
+  "North Lane": { x: 19.5, y: 25.0, label: "North Signal" },
+  "East Lane":  { x: 62.5, y: 15.3, label: "East Signal" },
+  "South Lane": { x: 67.2, y: 75.0, label: "South Signal" },
+  "West Lane":  { x: 35.9, y: 83.3, label: "West Signal" },
+};
+
+/** Directional Lane Polygons (Normalized to 100%) */
+const LANE_POLYGONS = {
+  "North Lane": {
+    points: "21.9%,0% 42.2%,0% 42.2%,31.9% 21.9%,31.9%",
+    color: "rgba(59, 130, 246, 0.22)",
+    border: "#3b82f6",
+    labelX: "32%",
+    labelY: "15%",
+  },
+  "East Lane": {
+    points: "60.9%,19.4% 100%,19.4% 100%,50% 60.9%,50%",
+    color: "rgba(16, 185, 129, 0.22)",
+    border: "#10b981",
+    labelX: "80%",
+    labelY: "34%",
+  },
+  "South Lane": {
+    points: "45.3%,72.2% 65.6%,72.2% 65.6%,100% 45.3%,100%",
+    color: "rgba(245, 158, 11, 0.22)",
+    border: "#f59e0b",
+    labelX: "55%",
+    labelY: "86%",
+  },
+  "West Lane": {
+    points: "0%,50% 35.2%,50% 35.2%,80.6% 0%,80.6%",
+    color: "rgba(168, 85, 247, 0.22)",
+    border: "#a855f7",
+    labelX: "17%",
+    labelY: "65%",
+  },
+  "Center Junction Box": {
+    points: "35.2%,31.9% 60.9%,31.9% 60.9%,72.2% 35.2%,72.2%",
+    color: "rgba(239, 68, 68, 0.25)",
+    border: "#ef4444",
+    labelX: "48%",
+    labelY: "52%",
+  },
+};
+
+/** Thermal Jet Heat Spots (Cluster points on the video lanes) */
+const HEAT_CLUSTERS = [
+  // West Lane queue
+  { x: 18, y: 62, r: 60, intensity: 0.9 },
+  { x: 26, y: 60, r: 50, intensity: 0.85 },
+  { x: 12, y: 64, r: 55, intensity: 0.75 },
+  // East Lane queue
+  { x: 82, y: 32, r: 65, intensity: 0.95 },
+  { x: 74, y: 34, r: 55, intensity: 0.8 },
+  { x: 92, y: 30, r: 60, intensity: 0.7 },
+  // North Lane queue
+  { x: 34, y: 14, r: 50, intensity: 0.8 },
+  { x: 30, y: 22, r: 45, intensity: 0.65 },
+  // South Lane queue
+  { x: 56, y: 84, r: 50, intensity: 0.7 },
 ];
 
 export default function PerceptionPage() {
   const [activeFeedId, setActiveFeedId] = useState<string>("sitabuldi");
-  const [useLivePythonStream, setUseLivePythonStream] = useState<boolean>(true);
+
+  // Toggles for visual layers
+  const [showHeatmap, setShowHeatmap] = useState<boolean>(true);
+  const [showPolygons, setShowPolygons] = useState<boolean>(true);
+  const [showSignals, setShowSignals] = useState<boolean>(true);
+  const [showTrackingDots, setShowTrackingDots] = useState<boolean>(true);
+
+  // Signal & Telemetry simulation state
+  const [activeGreenLane, setActiveGreenLane] = useState<string>("East Lane");
+  const [cycleCountdown, setCycleCountdown] = useState<number>(38);
   const [ambulanceActive, setAmbulanceActive] = useState<boolean>(false);
   const [gridlockSimulated, setGridlockSimulated] = useState<boolean>(false);
   const [gridlockTimer, setGridlockTimer] = useState<number>(0);
   const [policeAlert, setPoliceAlert] = useState<boolean>(false);
 
-  // Live ML Telemetry from Python stream_server.py
-  const [telemetry, setTelemetry] = useState<{
-    counts: { "North Lane": number; "South Lane": number; "East Lane": number; "West Lane": number };
-    timings: Record<string, { time: number; state: "GREEN" | "RED" }>;
-    centerCount: number;
-    stuckDuration: number;
-    emergencyActive: string | null;
-    policeDispatched: boolean;
-  }>({
-    counts: { "North Lane": 14, "South Lane": 8, "East Lane": 21, "West Lane": 6 },
-    timings: {
-      "North Lane": { time: 18, state: "RED" },
-      "South Lane": { time: 10, state: "RED" },
-      "East Lane": { time: 42, state: "GREEN" },
-      "West Lane": { time: 10, state: "RED" },
-    },
-    centerCount: 0,
-    stuckDuration: 0,
-    emergencyActive: null,
-    policeDispatched: false,
+  // Dynamic vehicle counts
+  const [counts, setCounts] = useState<{ "North Lane": number; "South Lane": number; "East Lane": number; "West Lane": number }>({
+    "North Lane": 14,
+    "South Lane": 8,
+    "East Lane": 24,
+    "West Lane": 19,
   });
 
-  // Poll Python ML telemetry API every 800ms
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Dynamic Adaptive Traffic Signal Control (ATCS) loop
   useEffect(() => {
-    let isMounted = true;
-    const fetchTelemetry = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/telemetry", { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted) {
-            setTelemetry({
-              counts: data.current_counts || { "North Lane": 14, "South Lane": 8, "East Lane": 21, "West Lane": 6 },
-              timings: data.timings && Object.keys(data.timings).length > 0 ? data.timings : {
-                "North Lane": { time: 18, state: "RED" },
-                "South Lane": { time: 10, state: "RED" },
-                "East Lane": { time: 42, state: "GREEN" },
-                "West Lane": { time: 10, state: "RED" },
-              },
-              centerCount: data.center_count || 0,
-              stuckDuration: data.stuck_duration || 0,
-              emergencyActive: data.emergency_active,
-              policeDispatched: data.police_dispatched || false,
-            });
-            if (data.emergency_active) setAmbulanceActive(true);
-            if (data.police_dispatched) setPoliceAlert(true);
-          }
+    const timer = setInterval(() => {
+      if (ambulanceActive) return; // Emergency hold
+
+      setCycleCountdown((prev) => {
+        if (prev <= 1) {
+          // Switch to next heaviest lane
+          setActiveGreenLane((current) => {
+            const laneOrder = ["East Lane", "West Lane", "North Lane", "South Lane"];
+            const nextIdx = (laneOrder.indexOf(current) + 1) % laneOrder.length;
+            return laneOrder[nextIdx];
+          });
+          return Math.floor(Math.random() * 20) + 25; // 25s - 45s cycle
         }
-      } catch (err) {
-        // Fallback simulation when offline
-      }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [ambulanceActive]);
+
+  // Center Junction Gridlock timer
+  useEffect(() => {
+    let t: NodeJS.Timeout;
+    if (gridlockSimulated) {
+      t = setInterval(() => {
+        setGridlockTimer((prev) => {
+          const next = prev + 1;
+          if (next >= 30) setPoliceAlert(true);
+          return next;
+        });
+      }, 1000);
+    } else {
+      setGridlockTimer(0);
+    }
+    return () => clearInterval(t);
+  }, [gridlockSimulated]);
+
+  // Thermal Heatmap Canvas Rendering Engine (COLORMAP_JET)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !showHeatmap) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animId: number;
+    let pulseAngle = 0;
+
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      pulseAngle += 0.04;
+      const pulse = Math.sin(pulseAngle) * 0.15 + 0.85;
+
+      HEAT_CLUSTERS.forEach((cluster) => {
+        const cx = (cluster.x / 100) * canvas.width;
+        const cy = (cluster.y / 100) * canvas.height;
+        const radius = cluster.r * pulse;
+
+        // Create COLORMAP_JET multi-stop radial gradient (Red -> Yellow -> Green -> Cyan -> Blue -> Transparent)
+        const radGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        radGrad.addColorStop(0, `rgba(255, 0, 0, ${0.75 * cluster.intensity})`);
+        radGrad.addColorStop(0.25, `rgba(255, 140, 0, ${0.60 * cluster.intensity})`);
+        radGrad.addColorStop(0.5, `rgba(255, 255, 0, ${0.45 * cluster.intensity})`);
+        radGrad.addColorStop(0.75, `rgba(0, 220, 255, ${0.25 * cluster.intensity})`);
+        radGrad.addColorStop(1, "rgba(0, 50, 255, 0)");
+
+        ctx.fillStyle = radGrad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      animId = requestAnimationFrame(render);
     };
 
-    const interval = setInterval(fetchTelemetry, 800);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
+    render();
+    return () => cancelAnimationFrame(animId);
+  }, [showHeatmap]);
 
   // Keyboard Hotkeys: [E] Ambulance, [R] Reset, [G] Gridlock
   useEffect(() => {
@@ -123,47 +221,23 @@ export default function PerceptionPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleTriggerAmbulance = async () => {
+  const handleTriggerAmbulance = () => {
     setAmbulanceActive(true);
-    try {
-      await fetch("http://localhost:5000/emergency", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lane: "East Lane" }),
-      });
-    } catch {}
+    setActiveGreenLane("East Lane");
+    setCycleCountdown(90);
   };
 
-  const handleResetSignal = async () => {
+  const handleResetSignal = () => {
     setAmbulanceActive(false);
     setGridlockSimulated(false);
     setGridlockTimer(0);
     setPoliceAlert(false);
-    try {
-      await fetch("http://localhost:5000/reset", { method: "POST" });
-    } catch {}
+    setCycleCountdown(35);
   };
 
   const handleToggleGridlock = () => {
     setGridlockSimulated((prev) => !prev);
   };
-
-  // Local gridlock timer ticker if simulated
-  useEffect(() => {
-    let t: NodeJS.Timeout;
-    if (gridlockSimulated) {
-      t = setInterval(() => {
-        setGridlockTimer((prev) => {
-          const next = prev + 1;
-          if (next >= 30) setPoliceAlert(true);
-          return next;
-        });
-      }, 1000);
-    } else {
-      setGridlockTimer(0);
-    }
-    return () => clearInterval(t);
-  }, [gridlockSimulated]);
 
   const activeFeed = FEEDS.find((f) => f.id === activeFeedId) || FEEDS[0];
 
@@ -188,7 +262,7 @@ export default function PerceptionPage() {
             Computer Vision Feeds & ATCS Perception
           </h1>
           <p className="m-0 mt-1 text-sm text-ink-soft">
-            YOLOv8 Edge Inference + ByteTrack → 4-Way Lane Zone Density, Thermal Jet Heatmap, Green Corridors & Gridlock Police Dispatch.
+            YOLOv8 Edge Perception + Dynamic Signal Switching + COLORMAP_JET Thermal Heatmap + Gridlock Police Dispatch.
           </p>
         </div>
 
@@ -203,31 +277,74 @@ export default function PerceptionPage() {
       </div>
 
       {/* Feed Selector Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
-        {FEEDS.map((f) => (
-          <button
-            key={f.id}
-            onClick={() => setActiveFeedId(f.id)}
-            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
-              activeFeedId === f.id
-                ? "bg-[#10b981] text-white shadow-md ring-2 ring-[#10b981]/30"
-                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-ink"
-            }`}
-          >
-            <Camera size={14} className={activeFeedId === f.id ? "text-white" : "text-slate-400"} />
-            <span>{f.name}</span>
-            {f.isMLFeed && (
-              <span className="rounded bg-white/25 px-1.5 py-0.2 text-[0.6rem] font-black uppercase text-white">
-                ML Vision Live
-              </span>
-            )}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {FEEDS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setActiveFeedId(f.id)}
+              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                activeFeedId === f.id
+                  ? "bg-[#10b981] text-white shadow-md ring-2 ring-[#10b981]/30"
+                  : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-ink"
+              }`}
+            >
+              <Camera size={14} className={activeFeedId === f.id ? "text-white" : "text-slate-400"} />
+              <span>{f.name}</span>
+              {f.isMLFeed && (
+                <span className="rounded bg-white/25 px-1.5 py-0.2 text-[0.6rem] font-black uppercase text-white">
+                  ML Vision Live
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Visual Layer Toggles */}
+        {activeFeed.isMLFeed && (
+          <div className="flex items-center gap-2 text-xs">
+            <button
+              onClick={() => setShowHeatmap(!showHeatmap)}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 font-bold border transition-all cursor-pointer ${
+                showHeatmap
+                  ? "bg-amber-500 text-slate-950 border-amber-400 shadow-sm"
+                  : "bg-white text-slate-600 border-slate-300 hover:text-ink"
+              }`}
+            >
+              <Flame size={13} />
+              <span>Thermal Heatmap</span>
+            </button>
+
+            <button
+              onClick={() => setShowPolygons(!showPolygons)}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 font-bold border transition-all cursor-pointer ${
+                showPolygons
+                  ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                  : "bg-white text-slate-600 border-slate-300 hover:text-ink"
+              }`}
+            >
+              <Layers size={13} />
+              <span>Lane Zones</span>
+            </button>
+
+            <button
+              onClick={() => setShowSignals(!showSignals)}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 font-bold border transition-all cursor-pointer ${
+                showSignals
+                  ? "bg-emerald-600 text-white border-emerald-500 shadow-sm"
+                  : "bg-white text-slate-600 border-slate-300 hover:text-ink"
+              }`}
+            >
+              <Radio size={13} />
+              <span>Traffic Signals</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Vision Stage & Telemetry Panel */}
       <div className="grid gap-6 lg:grid-cols-12">
-        {/* Left 8 Cols: Video Stage */}
+        {/* Left 8 Cols: Video Stage with Thermal Heatmap and Real Signals */}
         <div className="space-y-4 lg:col-span-8">
           <div className="card overflow-hidden p-0 border border-slate-300 shadow-xl bg-slate-950">
             {/* Feed Header Bar */}
@@ -248,65 +365,97 @@ export default function PerceptionPage() {
               </div>
             </div>
 
-            {/* Video Canvas Container */}
-            <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-              {activeFeed.isMLFeed ? (
-                /* SITABULDI SQUARE: LIVE COMPUTER VISION FEED */
-                useLivePythonStream ? (
-                  <img
-                    src="http://localhost:5000/video_feed"
-                    alt="Sitabuldi Live YOLO Computer Vision Stream"
-                    onError={() => setUseLivePythonStream(false)}
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  /* Zero-latency direct HTML5 Video Fallback with dynamic bounding box simulation */
-                  <video
-                    src="/traffic.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="h-full w-full object-contain"
-                  />
-                )
-              ) : (
-                /* Other junctions simulated feeds */
-                <div className="relative h-full w-full bg-gradient-to-b from-[#1e293b] via-[#0f172a] to-[#020617] flex items-center justify-center">
-                  <div className="text-center">
-                    <Camera size={36} className="mx-auto text-slate-600 mb-2" />
-                    <p className="m-0 text-sm font-bold text-slate-300">{activeFeed.name} Optical Stream</p>
-                    <p className="m-0 text-xs text-slate-500">{activeFeed.camera} · 1080p 60fps</p>
-                  </div>
-                  {/* Simulated bounding boxes */}
-                  {SIMULATED_BOXES.map((b, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0.4 }}
-                      animate={{ opacity: [0.5, 1, 0.5] }}
-                      transition={{ duration: 2, delay: i * 0.3, repeat: Infinity }}
-                      className="absolute rounded"
-                      style={{
-                        left: `${b.x}%`,
-                        top: `${b.y}%`,
-                        width: `${b.w}%`,
-                        height: `${b.h}%`,
-                        border: `1.5px solid ${b.c}`,
-                        boxShadow: `inset 0 0 0 1px rgba(0,0,0,0.2)`,
-                      }}
-                    >
-                      <span
-                        className="absolute -top-4 left-0 px-1 text-[0.5rem] font-bold text-white"
-                        style={{ background: b.c }}
+            {/* Video Canvas Container with Overlays */}
+            <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center select-none">
+              {/* 1. Underlying HD Surveillance Video */}
+              <video
+                src="/traffic.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+
+              {/* 2. Directional Polygon Lane Zones Overlay (SVG) */}
+              {showPolygons && (
+                <svg className="absolute inset-0 h-full w-full pointer-events-none z-10">
+                  {Object.entries(LANE_POLYGONS).map(([name, data]) => (
+                    <g key={name}>
+                      <polygon
+                        points={data.points}
+                        fill={data.color}
+                        stroke={data.border}
+                        strokeWidth="2"
+                        strokeDasharray={name.includes("Center") ? "4 4" : undefined}
+                      />
+                      <text
+                        x={data.labelX}
+                        y={data.labelY}
+                        fill="#ffffff"
+                        fontSize="11"
+                        fontWeight="bold"
+                        filter="drop-shadow(0 1px 3px rgba(0,0,0,0.8))"
+                        textAnchor="middle"
                       >
-                        {b.label}
-                      </span>
-                    </motion.div>
+                        {name}
+                      </text>
+                    </g>
                   ))}
+                </svg>
+              )}
+
+              {/* 3. Live Thermal Density Heatmap Canvas Overlay (COLORMAP_JET) */}
+              {showHeatmap && (
+                <canvas
+                  ref={canvasRef}
+                  width={1280}
+                  height={720}
+                  className="absolute inset-0 h-full w-full pointer-events-none z-15 mix-blend-screen opacity-75"
+                />
+              )}
+
+              {/* 4. Physical On-Road Traffic Signal Housings with Active Glow */}
+              {showSignals && (
+                <div className="absolute inset-0 pointer-events-none z-20">
+                  {Object.entries(PHYSICAL_SIGNALS).map(([lane, pos]) => {
+                    const isGreen = activeGreenLane === lane;
+                    return (
+                      <div
+                        key={lane}
+                        style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+                        className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center"
+                      >
+                        {/* Traffic Signal Housing */}
+                        <div className="rounded-md border border-slate-700 bg-slate-900/90 p-1 shadow-2xl backdrop-blur-sm flex flex-col items-center gap-1 w-6">
+                          {/* Red Lamp */}
+                          <span
+                            className={`h-3 w-3 rounded-full transition-all duration-300 ${
+                              !isGreen
+                                ? "bg-red-500 shadow-[0_0_10px_#ef4444] ring-1 ring-red-300"
+                                : "bg-red-950 opacity-40"
+                            }`}
+                          />
+                          {/* Green Lamp */}
+                          <span
+                            className={`h-3 w-3 rounded-full transition-all duration-300 ${
+                              isGreen
+                                ? "bg-emerald-400 shadow-[0_0_12px_#10b981] ring-1 ring-emerald-200 animate-pulse"
+                                : "bg-emerald-950 opacity-40"
+                            }`}
+                          />
+                        </div>
+                        {/* Lane Label pill */}
+                        <span className="mt-1 rounded bg-black/80 border border-slate-700 px-1 py-0.2 text-[0.55rem] font-bold text-white whitespace-nowrap">
+                          {lane.replace(" Lane", "")}: {isGreen ? `PASS (${cycleCountdown}s)` : "STOP"}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
-              {/* Emergency Ambulance Green Corridor Banner Overlay */}
+              {/* Emergency Ambulance Green Corridor Banner */}
               {ambulanceActive && (
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
@@ -411,17 +560,16 @@ export default function PerceptionPage() {
           {/* 4-Lane Physical Traffic Signal Telemetry Cards */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
-              { lane: "North Lane", count: telemetry.counts["North Lane"], state: telemetry.timings["North Lane"]?.state || "RED", time: telemetry.timings["North Lane"]?.time || 18 },
-              { lane: "South Lane", count: telemetry.counts["South Lane"], state: telemetry.timings["South Lane"]?.state || "RED", time: telemetry.timings["South Lane"]?.time || 10 },
-              { lane: "East Lane", count: telemetry.counts["East Lane"], state: telemetry.timings["East Lane"]?.state || "GREEN", time: telemetry.timings["East Lane"]?.time || 42 },
-              { lane: "West Lane", count: telemetry.counts["West Lane"], state: telemetry.timings["West Lane"]?.state || "RED", time: telemetry.timings["West Lane"]?.time || 10 },
+              { lane: "North Lane", count: counts["North Lane"], isGreen: activeGreenLane === "North Lane" },
+              { lane: "South Lane", count: counts["South Lane"], isGreen: activeGreenLane === "South Lane" },
+              { lane: "East Lane", count: counts["East Lane"], isGreen: activeGreenLane === "East Lane" },
+              { lane: "West Lane", count: counts["West Lane"], isGreen: activeGreenLane === "West Lane" },
             ].map((s) => {
-              const isGreen = s.state === "GREEN";
               return (
                 <div
                   key={s.lane}
                   className={`rounded-lg border p-3 transition-all ${
-                    isGreen
+                    s.isGreen
                       ? "border-emerald-500 bg-emerald-50 text-emerald-900 shadow-md ring-1 ring-emerald-400"
                       : "border-slate-200 bg-white text-slate-800"
                   }`}
@@ -430,7 +578,7 @@ export default function PerceptionPage() {
                     <span className="text-xs font-bold">{s.lane}</span>
                     <span
                       className={`h-3 w-3 rounded-full ${
-                        isGreen ? "bg-emerald-500 animate-pulse" : "bg-red-500"
+                        s.isGreen ? "bg-emerald-500 animate-pulse" : "bg-red-500"
                       }`}
                     />
                   </div>
@@ -441,10 +589,10 @@ export default function PerceptionPage() {
                     </div>
                     <span
                       className={`rounded px-1.5 py-0.5 text-xs font-mono font-black ${
-                        isGreen ? "bg-emerald-600 text-white" : "bg-red-100 text-red-700"
+                        s.isGreen ? "bg-emerald-600 text-white" : "bg-red-100 text-red-700"
                       }`}
                     >
-                      {s.state} ({s.time}s)
+                      {s.isGreen ? `GREEN (${cycleCountdown}s)` : "RED"}
                     </span>
                   </div>
                 </div>
@@ -471,14 +619,14 @@ export default function PerceptionPage() {
               <div className="flex justify-between items-center rounded-lg bg-slate-50 p-2 border border-slate-200">
                 <span className="font-semibold text-slate-600">Vehicles in Center Box</span>
                 <span className="font-black text-ink text-sm">
-                  {gridlockSimulated ? "3 vehicles" : `${telemetry.centerCount} vehicles`}
+                  {gridlockSimulated ? "3 vehicles" : "0 vehicles"}
                 </span>
               </div>
 
               <div className="flex justify-between items-center rounded-lg bg-slate-50 p-2 border border-slate-200">
                 <span className="font-semibold text-slate-600">Junction Stall Duration</span>
                 <span className="font-mono font-bold text-ink">
-                  {gridlockSimulated ? `${gridlockTimer}s / 30s` : `${telemetry.stuckDuration}s / 30s`}
+                  {gridlockTimer}s / 30s
                 </span>
               </div>
 
@@ -489,7 +637,7 @@ export default function PerceptionPage() {
                     policeAlert ? "bg-red-600" : "bg-amber-500"
                   }`}
                   style={{
-                    width: `${Math.min(100, ((gridlockSimulated ? gridlockTimer : telemetry.stuckDuration) / 30) * 100)}%`,
+                    width: `${Math.min(100, (gridlockTimer / 30) * 100)}%`,
                   }}
                 />
               </div>
