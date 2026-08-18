@@ -13,10 +13,10 @@ def create_pitch_deck():
     doc = SimpleDocTemplate(
         pdf_filename,
         pagesize=landscape(letter),
-        leftMargin=32,
-        rightMargin=32,
-        topMargin=28,
-        bottomMargin=28
+        leftMargin=30,
+        rightMargin=30,
+        topMargin=26,
+        bottomMargin=26
     )
 
     styles = getSampleStyleSheet()
@@ -36,8 +36,8 @@ def create_pitch_deck():
         'DeckTitle',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=20,
-        leading=24,
+        fontSize=19,
+        leading=23,
         textColor=PRIMARY
     )
 
@@ -45,8 +45,8 @@ def create_pitch_deck():
         'DeckHeading2',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=12,
-        leading=15,
+        fontSize=11,
+        leading=14,
         textColor=PRIMARY
     )
 
@@ -55,7 +55,7 @@ def create_pitch_deck():
         parent=styles['Normal'],
         fontName='Helvetica',
         fontSize=8.5,
-        leading=12,
+        leading=11.5,
         textColor=TEXT_DARK
     )
 
@@ -64,7 +64,7 @@ def create_pitch_deck():
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
         fontSize=8.5,
-        leading=12,
+        leading=11.5,
         textColor=TEXT_DARK
     )
 
@@ -73,7 +73,7 @@ def create_pitch_deck():
         parent=styles['Normal'],
         fontName='Helvetica',
         fontSize=8,
-        leading=11.5,
+        leading=11,
         textColor=TEXT_DARK
     )
 
@@ -81,8 +81,8 @@ def create_pitch_deck():
         'StatNum',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=18,
-        leading=20,
+        fontSize=17,
+        leading=19,
         textColor=ACCENT_GREEN,
         alignment=1
     )
@@ -103,19 +103,19 @@ def create_pitch_deck():
         header_data = [
             [
                 Paragraph(f"<font color='#10b981'><b>SURAKSHA</b></font> <font color='#ef4444'><b>नेत्र</b></font> &nbsp;|&nbsp; <font color='#64748b'>{category}</font>", body_style),
-                Paragraph(f"<font color='#64748b'><b>SLIDE {slide_num} OF 7 &nbsp;|&nbsp; DESIGNER MASTER SPEC</b></font>", ParagraphStyle('R', parent=body_style, alignment=2))
+                Paragraph(f"<font color='#64748b'><b>SLIDE {slide_num} OF 7 &nbsp;|&nbsp; MASTER SPEC</b></font>", ParagraphStyle('R', parent=body_style, alignment=2))
             ]
         ]
-        t = Table(header_data, colWidths=[540, 200])
+        t = Table(header_data, colWidths=[540, 210])
         t.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
             ('TOPPADDING', (0,0), (-1,-1), 0),
         ]))
         story.append(t)
-        story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e2e8f0"), spaceBefore=3, spaceAfter=6))
+        story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e2e8f0"), spaceBefore=3, spaceAfter=5))
         story.append(Paragraph(title_text, title_style))
-        story.append(Spacer(1, 6))
+        story.append(Spacer(1, 5))
 
     # =========================================================================
     # SLIDE 1: EXECUTIVE SUMMARY & PROBLEM CONTEXT
@@ -136,20 +136,20 @@ def create_pitch_deck():
             Paragraph("Traffic Officer to Vehicle Ratio (Severe Shortage)", stat_label_style)
         ]
     ]
-    t_metrics = Table(s1_metrics, colWidths=[185, 185, 185, 185])
+    t_metrics = Table(s1_metrics, colWidths=[188, 188, 188, 188])
     t_metrics.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), BG_LIGHT),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#e2e8f0")),
-        ('TOPPADDING', (0,0), (-1,-1), 6),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('TOPPADDING', (0,0), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
     ]))
 
     story.append(Paragraph("<b>The Nagpur Crisis:</b> As Central India's logistics capital, Nagpur suffers from unmanaged multi-modal traffic (2W/3W/4W), extreme monsoon waterlogging gridlocks, and severe traffic police personnel constraints across 142 major junctions (18,400 vehicles/hr at Sitabuldi peak).", body_style))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 5))
     story.append(t_metrics)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
 
     s1_boxes = [
         [
@@ -158,16 +158,16 @@ def create_pitch_deck():
             Paragraph("<b>Problem 3: Ambulance Paralysis</b><br/>Uncoordinated signals trap emergency medical vehicles, causing 14.2 min delays on hospital corridors.", bullet_style),
         ]
     ]
-    t_boxes = Table(s1_boxes, colWidths=[245, 245, 250])
+    t_boxes = Table(s1_boxes, colWidths=[250, 250, 252])
     t_boxes.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#fef2f2")),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#fca5a5")),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#fca5a5")),
-        ('PADDING', (0,0), (-1,-1), 6),
+        ('PADDING', (0,0), (-1,-1), 5),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
     ]))
     story.append(t_boxes)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
     story.append(Paragraph("<b>The Solution:</b> Nagpur Suraksha Netra bridges local Edge YOLOv8 Computer Vision on existing CCTVs with a 500km meteorological Doppler radar and a constrained-resource officer allocation engine.", body_bold))
 
     # =========================================================================
@@ -188,7 +188,7 @@ def create_pitch_deck():
             Paragraph("• <b>500km Doppler Weather Radar:</b> Live meteorological tracking across Central India.<br/>• <b>Proximity Awareness:</b> GPS 'Around Your Location' corridor density scanner.<br/>• <b>Citizen Incident Reporter:</b> Direct hazard dispatch to police command queue.<br/>• <b>Trilingual i18n Engine:</b> English, हिंदी, मराठी native toggle & first-visit prompt.", bullet_style)
         ]
     ]
-    t_arch = Table(arch_data, colWidths=[245, 245, 250])
+    t_arch = Table(arch_data, colWidths=[250, 250, 252])
     t_arch.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1e293b")),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
@@ -199,78 +199,58 @@ def create_pitch_deck():
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
     ]))
     story.append(t_arch)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
     story.append(Paragraph("<b>Zero Cloud GPU Capex:</b> Video inference executes locally at edge camera nodes, transmitting only lightweight telemetry JSON (<b>0.4 KB/s</b>) to central command. Live production stream accessible at <u>http://localhost:5000/video_feed</u> and web console at <u>https://suraksha-netra-743e8.web.app</u>.", body_style))
 
     # =========================================================================
-    # SLIDE 3: COMPETITIVE MOAT (WHAT WE PROVIDE THAT INDUSTRY DOESN'T)
+    # SLIDE 3: 5 CORE USPs & SYSTEM BREAKTHROUGHS (NEW HERO USP SLIDE)
     # =========================================================================
     story.append(PageBreak())
-    make_header(3, "Competitive Moat: Why Nagpur Suraksha Netra Outperforms Legacy Systems", "COMPETITIVE ADVANTAGE")
+    make_header(3, "Core USPs & System Breakthroughs: Why Nagpur Suraksha Netra Wins", "UNIQUE SELLING PROPOSITIONS (USPs)")
 
-    comp_headers = [
-        Paragraph("<b>Capability / Feature</b>", body_bold),
-        Paragraph("<b>Google Maps / TomTom</b>", body_bold),
-        Paragraph("<b>Legacy ITMS (SCATS/SCOOT)</b>", body_bold),
-        Paragraph("<b>Nagpur Suraksha Netra (Ours)</b>", ParagraphStyle('WB', parent=body_bold, textColor=colors.HexColor("#10b981")))
+    usp_cards_row1 = [
+        [
+            Paragraph("<font color='#ef4444'><b>🚑 USP 1: EMERGENCY GREEN CORRIDOR</b></font><br/>• <b>90s Priority Lock:</b> Instantly freezes conflicting lanes to RED.<br/>• <b>Acoustic & Vision:</b> Auto-triggered via siren or 1-click police override.<br/>• <b>Hospital Transit:</b> Sitabuldi ➔ GMCH / AIIMS corridor.<br/><b>🟢 66.2% Transit Acceleration (14.2 min ➔ 4.8 min)</b>", bullet_style),
+            Paragraph("<font color='#2563eb'><b>🌧️ USP 2: MONSOON DOPPLER REROUTING</b></font><br/>• <b>500km Radar Sync:</b> IMD/Open-Meteo live mm/hr precipitation.<br/>• <b>Preemptive Flooding:</b> Flags underpasses (Manish Nagar) in blue/red.<br/>• <b>Proactive Diversion:</b> Reroutes traffic before cars drown or stall.<br/><b>🟢 61.9% Reduction in Stalled Vehicles (>5mm Rain)</b>", bullet_style),
+        ]
     ]
-
-    comp_rows = [
-        [
-            Paragraph("<b>Vision & Perception</b>", bullet_style),
-            Paragraph("GPS crowd-sourced only (No CCTV perception)", bullet_style),
-            Paragraph("Inductive loop coils (Frequent road cut failures)", bullet_style),
-            Paragraph("<b>Edge YOLOv8 CV on existing CCTV (Zero new hardware capex)</b>", bullet_style)
-        ],
-        [
-            Paragraph("<b>Weather & Flood AI</b>", bullet_style),
-            Paragraph("Passive delay warning after traffic jams", bullet_style),
-            Paragraph("No weather or waterlogging integration", bullet_style),
-            Paragraph("<b>500km Doppler Radar + Automated Waterlogged Road Rerouting</b>", bullet_style)
-        ],
-        [
-            Paragraph("<b>Signal Synchronization</b>", bullet_style),
-            Paragraph("None (Navigation app only)", bullet_style),
-            Paragraph("Fixed preset timing tables", bullet_style),
-            Paragraph("<b>Real-time dynamic green allocation (10s-60s) based on vehicle density</b>", bullet_style)
-        ],
-        [
-            Paragraph("<b>Emergency Corridor</b>", bullet_style),
-            Paragraph("None", bullet_style),
-            Paragraph("Manual operator toggle (Slow phone calls)", bullet_style),
-            Paragraph("<b>Automated 90s acoustic siren green wave override ([E] key)</b>", bullet_style)
-        ],
-        [
-            Paragraph("<b>Gridlock Prevention</b>", bullet_style),
-            Paragraph("None", bullet_style),
-            Paragraph("None", bullet_style),
-            Paragraph("<b>30-Second Center Box Stalled Counter & Automated Police Dispatch</b>", bullet_style)
-        ],
-        [
-            Paragraph("<b>Citizen-Police Loop</b>", bullet_style),
-            Paragraph("Siloed consumer feedback", bullet_style),
-            Paragraph("No citizen interface", bullet_style),
-            Paragraph("<b>Trilingual Citizen Portal feeding live into Police Incident Queue</b>", bullet_style)
-        ],
-        [
-            Paragraph("<b>Infrastructure Cost</b>", bullet_style),
-            Paragraph("N/A (Consumer App)", bullet_style),
-            Paragraph("₹65 Lakhs per junction + ₹85k/mo maintenance", bullet_style),
-            Paragraph("<b>₹1.2 Lakhs per junction (78% Cost Reduction vs Legacy)</b>", bullet_style)
-        ],
-    ]
-
-    t_comp = Table([comp_headers] + comp_rows, colWidths=[130, 180, 190, 240])
-    t_comp.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#0f172a")),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-        ('BACKGROUND', (3,1), (3,-1), colors.HexColor("#ecfdf5")),
+    t_usp1 = Table(usp_cards_row1, colWidths=[376, 376])
+    t_usp1.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (0,0), colors.HexColor("#fef2f2")),
+        ('BACKGROUND', (1,0), (1,0), colors.HexColor("#eff6ff")),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
-        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#e2e8f0")),
-        ('PADDING', (0,0), (-1,-1), 4.5),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+        ('PADDING', (0,0), (-1,-1), 5.5),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
     ]))
-    story.append(t_comp)
+    story.append(t_usp1)
+    story.append(Spacer(1, 4))
+
+    usp_cards_row2 = [
+        [
+            Paragraph("<font color='#10b981'><b>⚡ USP 3: EDGE ATCS ADAPTIVE SIGNALS</b></font><br/>• <b>4-Way Polygon Zones:</b> Tracks N/S/E/W lanes at 30.0 FPS.<br/>• <b>Density Math:</b> Dynamic 10s–60s green light allocation.<br/>• <b>Zero Road Digging:</b> Runs pure software on existing CCTVs.<br/><b>🟢 38.4% Peak Junction Delay Reduction</b>", bullet_style),
+            Paragraph("<font color='#f59e0b'><b>🛑 USP 4: 30s GRIDLOCK INTERCEPTOR</b></font><br/>• <b>Center Box Counter:</b> Monitors junction conflict zone.<br/>• <b>Anti-Deadlock AI:</b> If vehicles stall >30s, emits instant dispatch alert.<br/>• <b>Automated Interceptor:</b> Prevents citywide arterial deadlock.<br/><b>🟢 4.2x Faster Police Intervention (18.5 min ➔ 4.4 min)</b>", bullet_style),
+        ]
+    ]
+    t_usp2 = Table(usp_cards_row2, colWidths=[376, 376])
+    t_usp2.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (0,0), colors.HexColor("#ecfdf5")),
+        ('BACKGROUND', (1,0), (1,0), colors.HexColor("#fffbeb")),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+        ('PADDING', (0,0), (-1,-1), 5.5),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+    ]))
+    story.append(t_usp2)
+    story.append(Spacer(1, 4))
+
+    story.append(Table([[
+        Paragraph("<b>🌐 USP 5: Closed-Loop Trilingual Citizen-to-Police Pipeline:</b> Real-time GPS Proximity ('Around Your Location') + Citizen Hazard Dispatch (English / हिंदी / मराठी) feeding directly into Police Command DSS. <b>78% Cost Reduction vs Legacy Foreign ITMS (₹1.2L vs ₹65L per junction)</b>.", body_style)
+    ]], colWidths=[752], style=[
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
+        ('BOX', (0,0), (-1,-1), 1, PRIMARY),
+        ('PADDING', (0,0), (-1,-1), 5),
+    ]))
 
     # =========================================================================
     # SLIDE 4: MATHEMATICAL MODELING & DEEP-DIVE
@@ -284,7 +264,7 @@ def create_pitch_deck():
         Spacer(1, 3),
         Paragraph("<font color='#10b981' face='Helvetica-Bold'>T_green(L_i) = max(10, round((N_i / max(N_tot, 1)) * 60)) seconds</font>", body_bold),
         Paragraph("The lane with highest density $\\arg\\max(N_i)$ receives green flow, while opposing lanes are locked to red.", body_style),
-        Spacer(1, 6),
+        Spacer(1, 5),
         Paragraph("<b>2. Thermal Density Heatmap Clustering Equation:</b>", heading2_style),
         Paragraph("Gaussian kernel density estimation across all detected vehicle centroids $(x_v, y_v)$ with $\\sigma = 45\\text{ px}$:", body_style),
         Paragraph("<font color='#2563eb' face='Helvetica-Bold'>H(x, y) = sum_v exp(- ((x - x_v)^2 + (y - y_v)^2) / (2 * 45^2))</font>", body_bold),
@@ -296,15 +276,15 @@ def create_pitch_deck():
         Paragraph("Risk score $R_j \\in [0, 1]$ computed every 15 seconds per junction $j$:", body_style),
         Paragraph("<font color='#ef4444' face='Helvetica-Bold'>R_j = 0.35*D_j + 0.30*W_j + 0.20*V_j + 0.15*H_j</font>", body_bold),
         Paragraph("• $D_j$: Real-time Vehicle Density (0 to 1.0)<br/>• $W_j$: Weather Waterlog Index (0 if dry, 0.4 if rain >5mm, 1.0 if flood)<br/>• $V_j$: Violation Intensity (No-helmet, triple-riding, wrong-way)<br/>• $H_j$: Historical Blackspot Fatality Index", bullet_style),
-        Spacer(1, 6),
+        Spacer(1, 5),
         Paragraph("<b>4. Center Junction Gridlock Trigger:</b>", heading2_style),
         Paragraph("Gridlock condition $G = (N_{\\text{center}} \\ge 2) \\land (\\Delta t_{\\text{stall}} \\ge 30\\text{s})$. Automatically emits immediate police dispatch telemetry packet.", body_style)
     ]
 
-    t_math = Table([[math_col1, math_col2]], colWidths=[365, 375])
+    t_math = Table([[math_col1, math_col2]], colWidths=[372, 380])
     t_math.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('PADDING', (0,0), (-1,-1), 6),
+        ('PADDING', (0,0), (-1,-1), 5),
         ('BACKGROUND', (0,0), (-1,-1), BG_LIGHT),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
     ]))
@@ -355,25 +335,25 @@ def create_pitch_deck():
         ],
     ]
 
-    t_bench = Table(benchmarks_data, colWidths=[200, 160, 160, 220])
+    t_bench = Table(benchmarks_data, colWidths=[205, 160, 160, 227])
     t_bench.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#0f172a")),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#e2e8f0")),
-        ('PADDING', (0,0), (-1,-1), 5),
+        ('PADDING', (0,0), (-1,-1), 4.5),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('BACKGROUND', (3,1), (3,-1), colors.HexColor("#f0fdf4")),
     ]))
     story.append(t_bench)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
 
     story.append(Table([[
         Paragraph("<b>Societal Return on Investment (ROI):</b> Over 12 months in Nagpur alone, this system is projected to prevent ~18 fatalities from delayed emergency transit, eliminate 4,200 metric tons of $CO_2$ emissions from idling vehicles, and return ₹49.2 Crore in direct annual fuel savings to Nagpur citizens.", body_style)
-    ]], colWidths=[740], style=[
+    ]], colWidths=[752], style=[
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
         ('BOX', (0,0), (-1,-1), 1, PRIMARY),
-        ('PADDING', (0,0), (-1,-1), 6),
+        ('PADDING', (0,0), (-1,-1), 5),
     ]))
 
     # =========================================================================
@@ -394,15 +374,15 @@ def create_pitch_deck():
             Paragraph("<b>SOM</b>: Nagpur Metro Area (142 Intersections)", stat_label_style)
         ]
     ]
-    t_tam = Table(tam_data, colWidths=[245, 245, 250])
+    t_tam = Table(tam_data, colWidths=[250, 250, 252])
     t_tam.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), BG_LIGHT),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
-        ('PADDING', (0,0), (-1,-1), 6),
+        ('PADDING', (0,0), (-1,-1), 5),
     ]))
     story.append(t_tam)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
 
     fin_col1 = [
         Paragraph("<b>Commercial Business Model:</b>", heading2_style),
@@ -420,10 +400,10 @@ def create_pitch_deck():
         Paragraph("• <b>Payback Period for City:</b> < 3.4 months through fuel and productivity savings.", bullet_style),
     ]
 
-    t_fin = Table([[fin_col1, fin_col2]], colWidths=[365, 375])
+    t_fin = Table([[fin_col1, fin_col2]], colWidths=[372, 380])
     t_fin.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('PADDING', (0,0), (-1,-1), 6),
+        ('PADDING', (0,0), (-1,-1), 5),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
     ]))
@@ -447,29 +427,29 @@ def create_pitch_deck():
             Paragraph("• Multi-city cluster expansion: Pune, Nashik, Chhatrapati Sambhajinagar, Amravati.<br/>• Centralized Maharashtra Urban Mobility Grid.<br/>• Open API integration for autonomous vehicles.", bullet_style)
         ]
     ]
-    t_road = Table(roadmap_data, colWidths=[245, 245, 250])
+    t_road = Table(roadmap_data, colWidths=[250, 250, 252])
     t_road.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#10b981")),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('BACKGROUND', (0,1), (-1,1), BG_LIGHT),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
-        ('PADDING', (0,0), (-1,-1), 6),
+        ('PADDING', (0,0), (-1,-1), 5.5),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
     ]))
     story.append(t_road)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
 
     story.append(Table([[
         Table([
             [Paragraph("<b>National Alignment — Viksit Bharat 2047:</b>", heading2_style)],
             [Paragraph("Nagpur Suraksha Netra delivers an indigenous, sovereign, self-reliant AI platform that eliminates dependence on foreign ITMS licensing, reduces carbon emissions through intelligent traffic flow, and guarantees emergency medical accessibility for every citizen.", body_style)],
             [Paragraph("<b>Live Demo Portal:</b> <font color='#2563eb'><u>https://suraksha-netra-743e8.web.app</u></font> &nbsp;&nbsp;|&nbsp;&nbsp; <b>GitHub:</b> <font color='#2563eb'><u>https://github.com/pranayukey200/viksit_nagpur_ITMS</u></font>", body_bold)]
-        ], colWidths=[720])
-    ]], colWidths=[740], style=[
+        ], colWidths=[730])
+    ]], colWidths=[752], style=[
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
         ('BOX', (0,0), (-1,-1), 1, PRIMARY),
-        ('PADDING', (0,0), (-1,-1), 6),
+        ('PADDING', (0,0), (-1,-1), 5),
     ]))
 
     doc.build(story)
